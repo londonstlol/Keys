@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SakuraHub — Get Your Key</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f0f12;
+            --card-bg: #1e1e23;
+            --accent-color: #ffaa00; /* Matching Sakura pink or use original #ff5e95 */
+            --sakura-pink: #ffaac8;
+            --text-main: #ffffff;
+            --text-sub: #82828c;
+            --input-bg: #141419;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .background-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255, 170, 200, 0.1) 0%, rgba(15, 15, 18, 0) 70%);
+            z-index: -1;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--sakura-pink);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        p {
+            color: var(--text-sub);
+            font-size: 15px;
+            margin-bottom: 32px;
+        }
+
+        .key-container {
+            background-color: var(--input-bg);
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .key-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            color: var(--sakura-pink);
+            word-break: break-all;
+            letter-spacing: 1px;
+        }
+
+        .status {
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+
+        button {
+            width: 100%;
+            background-color: var(--sakura-pink);
+            color: #1e1e23;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(255, 170, 200, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(255, 170, 200, 0.3);
+            filter: brightness(1.1);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .footer-note {
+            margin-top: 24px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--sakura-pink);
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="background-glow"></div>
+
+    <div class="card">
+        <h1>🌸 SakuraHub</h1>
+        <p>Access Granted. Here is your key.</p>
+
+        <div id="loading">
+            <div class="spinner"></div>
+            <p style="margin-bottom: 0;">Generating access key...</p>
+        </div>
+
+        <div id="main-content" class="hidden">
+            <div class="key-container">
+                <div class="key-display" id="key-text">SAKURA-LOADING...</div>
+                <div class="status">Valid for 48 hours</div>
+            </div>
+
+            <button id="copy-btn">Copy to Clipboard</button>
+        </div>
+
+        <div class="footer-note">
+            The key is bound to your physical session and machine.
+        </div>
+    </div>
+
+    <script>
+        const SECRET_URL = 'https://raw.githubusercontent.com/londonstlol/Keys/refs/heads/main/Sakura%20keys';
+        
+        async function generateKey() {
+            try {
+                // 1. Fetch Secret
+                const response = await fetch(SECRET_URL);
+                const text = await response.text();
+                const secret = text.replace(/\s+/g, '');
+
+                // 2. Get Creation Time (Same as Python/Lua os.time())
+                const createdAt = Math.floor(Date.now() / 1000);
+
+                // 3. Hash Logic (Matches Script)
+                const combined = secret + createdAt.toString();
+                let hash = 0;
+                for (let i = 0; i < combined.length; i++) {
+                    // (hash * 31 + charCode) % 16777216
+                    hash = (hash * 31 + combined.charCodeAt(i)) % 16777216;
+                }
+
+                // 4. Format Hex
+                const tHex = createdAt.toString(16).toUpperCase().padStart(8, '0');
+                const hHex = hash.toString(16).toUpperCase().padStart(6, '0');
+
+                const key = `SAKURA-${tHex}-${hHex}`;
+
+                // Update UI
+                document.getElementById('key-text').innerText = key;
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Failed to generate key:', error);
+                document.getElementById('loading').innerHTML = '<p style="color: #ff6e6e;">Error: Failed to fetch key server. Please refresh.</p>';
+            }
+        }
+
+        document.getElementById('copy-btn').addEventListener('click', () => {
+            const keyText = document.getElementById('key-text').innerText;
+            navigator.clipboard.writeText(keyText).then(() => {
+                const btn = document.getElementById('copy-btn');
+                const originalText = btn.innerText;
+                btn.innerText = 'Copied!';
+                btn.style.backgroundColor = '#82ff95';
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.style.backgroundColor = '';
+                }, 2000);
+            });
+        });
+
+        // Initialize
+        generateKey();
+    </script>
+</body>
+</html>
